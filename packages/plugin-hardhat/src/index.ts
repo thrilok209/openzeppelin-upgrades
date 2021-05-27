@@ -14,6 +14,7 @@ import type { ChangeAdminFunction, TransferProxyAdminOwnershipFunction, GetInsta
 export interface HardhatUpgrades {
   deployProxy: DeployFunction;
   upgradeProxy: UpgradeFunction;
+  validateUpgrade: PrepareUpgradeFunction;
   prepareUpgrade: PrepareUpgradeFunction;
   silenceWarnings: typeof silenceWarnings;
   admin: {
@@ -65,7 +66,7 @@ extendEnvironment(hre => {
     (): HardhatUpgrades => {
       const { makeChangeProxyAdmin, makeTransferProxyAdminOwnership, makeGetInstanceFunction } = require('./admin');
       const { makeDeployProxy } = require('./deploy-proxy');
-      const { makeUpgradeProxy, makePrepareUpgrade } = require('./upgrade-proxy');
+      const { makeUpgradeProxy, makePrepareUpgrade, makeValidateUpgrade } = require('./upgrade-proxy');
       const { silenceWarnings } = require('@openzeppelin/upgrades-core');
 
       return {
@@ -73,6 +74,7 @@ extendEnvironment(hre => {
         deployProxy: makeDeployProxy(hre),
         upgradeProxy: makeUpgradeProxy(hre),
         prepareUpgrade: makePrepareUpgrade(hre),
+        validateUpgrade: makeValidateUpgrade(hre),
         admin: {
           getInstance: makeGetInstanceFunction(hre),
           changeProxyAdmin: makeChangeProxyAdmin(hre),

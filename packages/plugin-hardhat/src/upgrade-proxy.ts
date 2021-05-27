@@ -57,6 +57,39 @@ async function prepareUpgradeImpl(
   });
 }
 
+
+async function prepareUpgradeValidate(
+  hre: HardhatRuntimeEnvironment,
+  manifest: Manifest,
+  proxyAddress: string,
+  ImplFactory: ContractFactory,
+  opts: ValidationOptions,
+): Promise<string> {
+  const { provider } = hre.network;
+  const validations = await readValidations(hre);
+
+  const unlinkedBytecode: string = getUnlinkedBytecode(validations, ImplFactory.bytecode);
+  const version = getVersion(unlinkedBytecode, ImplFactory.bytecode);
+  assertUpgradeSafe(validations, version, opts);
+
+  const currentImplAddress = await getImplementationAddress(provider, proxyAddress);
+  const deploymentLayout = await getStorageLayoutForAddress(manifest, validations, currentImplAddress);
+
+  const layout = getStorageLayout(validations, version);
+  assertStorageUpgradeSafe(deploymentLayout, layout, opts.unsafeAllowCustomTypes);
+
+  return await 'true'
+}
+
+export function makeValidateUpgrade(hre: HardhatRuntimeEnvironment): PrepareUpgradeFunction {
+  return async function validateUpgrade(proxyAddress, ImplFactory, opts = {}) {
+    const { provider } = hre.network;
+    const manifest = await Manifest.forNetwork(provider);
+
+    return await prepareUpgradeValidate(hre, manifest, proxyAddress, ImplFactory, opts);
+  };
+}
+
 export function makePrepareUpgrade(hre: HardhatRuntimeEnvironment): PrepareUpgradeFunction {
   return async function prepareUpgrade(proxyAddress, ImplFactory, opts = {}) {
     const { provider } = hre.network;
